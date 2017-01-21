@@ -34,7 +34,7 @@ def main():
         facility = syslog.LOG_CRON
 
     if args.syslog:
-        syslog.openlog(ident=args.ident, facility=facility)
+        syslog.openlog(args.ident, 0, facility)
 
     skipold = not args.forceold
     producer = ReportProducer(
@@ -139,13 +139,13 @@ def parse_args():
         '--facility',
         help="Which syslog facility to use",
         default="cron",
-        type="str")
+        type=str)
 
     parser.add_argument(
         '--ident',
         help="string to prepend to every syslog message",
         default="package-cron",
-        type="str")
+        type=str)
 
     return parser.parse_args()
 

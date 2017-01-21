@@ -59,6 +59,7 @@ class ErrataParser(object):
         result = list(filter(lambda x: x != None, result))
         return result
 
+
 class ErrataFetcher(object):
     def get_errata(self):
         response = urllib2.urlopen('https://cefs.steve-meier.de/errata.latest.xml')
