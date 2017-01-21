@@ -17,6 +17,7 @@ class PackageChecker(object):
         os_version = self.os_fetcher.get_mid_level_version()
         # underscores used in filenames
         os_version = os_version.replace('.', '_')
+        # os_version = "6_8" for example
         regexs = [r'.*el'+os_version+'.*']
         
         # Convention allows either el6 or el6_0
@@ -45,6 +46,7 @@ class PackageChecker(object):
         current_installed = self.package_fetcher.fetch_installed_packages()
         results = []
         for advisory in advisories:
+
             installed_package_match = map(lambda advisory_package: self.match_advisory_against_installed(advisory_package,current_installed),advisory.packages)
             # Need to flatten
             installed_package_match = reduce(operator.add, installed_package_match)

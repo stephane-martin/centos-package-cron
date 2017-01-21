@@ -50,4 +50,7 @@ class ErrataItem(Base):
         self.references = references
         self.timestamp = datetime.today()
 
+    def __str__(self):
+        return "ID %s (%s, %s)" % (self.advisory_id, self.type, self.severity)
+
 

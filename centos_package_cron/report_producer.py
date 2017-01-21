@@ -73,7 +73,7 @@ class ReportProducer(object):
             syslog.syslog(
                 json.dumps({
                     'advisory': {
-                        'id': advisory.id,
+                        'id': advisory.advisory_id,
                         'severity': severity_label,
                         'references': advisory.references,
                         'packages': [{
