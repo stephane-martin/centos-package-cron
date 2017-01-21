@@ -1,13 +1,16 @@
+# coding: utf8
+
+from collections import namedtuple
+
 from rpmUtils.miscutils import splitFilename
 
-class PackageParser:
+
+APackage = namedtuple('APackage', ['name', 'version', 'release', 'arch'])
+
+
+class PackageParser(object):
     @staticmethod
     def parsePackage(filename):
         (n, v, r, e, a) = splitFilename(filename)
-        return {
-        'name':n,
-        'version':v,
-        'release':r,
-        'arch':a
-        }
+        return APackage(n, v, r, a)
     

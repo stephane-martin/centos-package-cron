@@ -1,8 +1,12 @@
+# coding: utf8
+
+
 from datetime import datetime
 from db_base import Base
 from sqlalchemy import Column, Integer, String, DateTime, Numeric, ForeignKey
 
-class ErrataType:
+
+class ErrataType(object):
     BugFixAdvisory,SecurityAdvisory,ProductEnhancementAdvisory = range(3)
     
     @staticmethod
@@ -13,8 +17,9 @@ class ErrataType:
         ErrataType.ProductEnhancementAdvisory: 'Product Enhancement Advisory'
         }
         return labels[value]
-    
-class ErrataSeverity:
+
+
+class ErrataSeverity(object):
     Critical, Important, Moderate, Low = range(4)
     
     @staticmethod
@@ -27,6 +32,7 @@ class ErrataSeverity:
         None: '(No severity supplied)'
         }
         return labels[value]
+
 
 class ErrataItem(Base):
     __tablename__ = 'notified_advisories'
@@ -43,3 +49,5 @@ class ErrataItem(Base):
         self.packages = packages
         self.references = references
         self.timestamp = datetime.today()
+
+

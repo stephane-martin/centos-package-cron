@@ -1,7 +1,11 @@
+# coding: utf8
+
 from datetime import datetime
-from db_base import Base
+
 from sqlalchemy import Column, Integer, String, DateTime, Numeric, ForeignKey
+from db_base import Base
 from rpmUtils.miscutils import compareEVR
+
 
 class Package(Base):
     __tablename__ = 'notified_packages'
@@ -12,20 +16,22 @@ class Package(Base):
     arch = Column(String)
     repository = Column(String)
     timestamp = Column(DateTime)
-    
-    def __init__(self,name,version,release,arch,repository):
+
+    def __init__(self, name, version, release, arch, repository):
         self.name = name
         self.version = version
         self.release = release
         self.arch = arch
         self.repository = repository
         self.timestamp = datetime.today()
-        
-    def compare_evr(self, other_package):            
-        return compareEVR( ('', self.version, self.release), ('', other_package.version, other_package.release))
-        
+
+    def compare_evr(self, other_package):
+        return compareEVR(('', self.version, self.release),
+                          ('', other_package.version, other_package.release))
+
     def __str__(self):
         return "Package %s-%s-%s" % (self.name, self.version, self.release)
-        
+
     def __repr__(self):
         return self.__str__()
+

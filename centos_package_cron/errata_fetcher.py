@@ -1,9 +1,14 @@
-from errata_item import *
+# coding: utf8
+
+
 import urllib2
 from xml.etree import ElementTree as et
+
+from errata_item import *
 from package_parser import PackageParser
 
-class ErrataParser:
+
+class ErrataParser(object):
     def getType(self,theType):
         mapping = {'Bug Fix Advisory': ErrataType.BugFixAdvisory,
         'Security Advisory':ErrataType.SecurityAdvisory,
@@ -54,7 +59,7 @@ class ErrataParser:
         result = list(filter(lambda x: x != None, result))
         return result
 
-class ErrataFetcher:
+class ErrataFetcher(object):
     def get_errata(self):
         response = urllib2.urlopen('https://cefs.steve-meier.de/errata.latest.xml')
         xml = response.read()

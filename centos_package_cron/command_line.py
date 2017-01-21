@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import argparse
+import syslog
 import socket
 import sys
 reload(sys)
@@ -13,6 +14,7 @@ from email.mime.text import MIMEText
 import pkg_resources
 
 __VERSION__ = pkg_resources.require("centos_package_cron")[0].version
+
 
 def main():
     args = parse_args()
@@ -26,9 +28,23 @@ def main():
     repos_to_include_list = []
     if args.enablerepo != None:
         repos_to_include_list = args.enablerepo.split(',')
+    try:
+        facility = syslog.__getattribute__("LOG_" + args.facility)
+    except AttributeError:
+        facility = syslog.LOG_CRON
+
+    if args.syslog:
+        syslog.openlog(ident=args.ident, facility=facility)
 
     skipold = not args.forceold
-    producer = ReportProducer(repos_to_exclude_list, repos_to_include_list, skipold, args.skip_sqlite_file_path,include_depends_on=args.include_depends_on)
+    producer = ReportProducer(
+        repos_to_exclude_list,
+        repos_to_include_list,
+        skipold,
+        args.skip_sqlite_file_path,
+        include_depends_on=args.include_depends_on,
+        send_syslog=args.syslog
+    )
     report_content = producer.get_report_content()
 
     if report_content != '':
@@ -40,54 +56,100 @@ def main():
             message['Subject'] = args.email_subject
             message['From'] = args.email_from
             message['To'] = args.email_to
-            server.sendmail(from_addr=args.email_from, to_addrs=[args.email_to], msg=message.as_string())
+            server.sendmail(
+                from_addr=args.email_from,
+                to_addrs=[args.email_to],
+                msg=message.as_string())
             server.quit
 
+
 def parse_args():
-    parser = argparse.ArgumentParser(description="Emails administrators with CentOS security updates and changelogs of non-security updates. Version %s" % __VERSION__, formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    parser = argparse.ArgumentParser(
+        description="Emails administrators with CentOS security updates and changelogs of non-security updates. Version %s"
+        % __VERSION__,
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('-e', '--email_to',
-    type=str,
-    default='root',
-    help='Email following user with the output')
+    parser.add_argument(
+        '-e',
+        '--email_to',
+        type=str,
+        default='root',
+        help='Email following user with the output')
 
-    parser.add_argument('-o', '--output',
-    type=str,
-    default='email',
-    help='How should report be sent, email or stdout are valid values')
+    parser.add_argument(
+        '-o',
+        '--output',
+        type=str,
+        default='email',
+        help='How should report be sent, email or stdout are valid values')
 
-    parser.add_argument('-f', '--email_from',
-    type=str,
-    default="CentOS Update Check on %s <noreply@centos.org>" %(socket.gethostname()),
-    help='Send the email from this user.')
+    parser.add_argument(
+        '-f',
+        '--email_from',
+        type=str,
+        default="CentOS Update Check on %s <noreply@centos.org>" %
+        (socket.gethostname()),
+        help='Send the email from this user.')
 
-    parser.add_argument('-s', '--email_subject',
-    type=str,
-    default="CentOS Update Check on %s" %(socket.gethostname()),
-    help='Send the email using this subject')
+    parser.add_argument(
+        '-s',
+        '--email_subject',
+        type=str,
+        default="CentOS Update Check on %s" % (socket.gethostname()),
+        help='Send the email using this subject')
 
-    parser.add_argument('-dr','--disablerepo',
-    type=str,
-    help='List of comma separated repos to exclude when dealing with Yum')
+    parser.add_argument(
+        '-dr',
+        '--disablerepo',
+        type=str,
+        help='List of comma separated repos to exclude when dealing with Yum')
 
-    parser.add_argument('-er','--enablerepo',
-    type=str,
-    help='List of comma separated repos to include when dealing with Yum')
+    parser.add_argument(
+        '-er',
+        '--enablerepo',
+        type=str,
+        help='List of comma separated repos to include when dealing with Yum')
 
-    parser.add_argument('-fo','--forceold',
-    help='Instead of the default behavior to only complain once for a given advisory/package update notice, repeats them with each run.',
-    action="store_true")
+    parser.add_argument(
+        '-fo',
+        '--forceold',
+        help='Instead of the default behavior to only complain once for a given advisory/package update notice, repeats them with each run.',
+        action="store_true")
 
-    parser.add_argument('-db','--skip-sqlite-file-path',
-    type=str,
-    default=db_session_fetcher.DEFAULT_DB_PATH,
-    help='The location of the Sqlite DB used to track which notifications you have already received.')
+    parser.add_argument(
+        '-db',
+        '--skip-sqlite-file-path',
+        type=str,
+        default=db_session_fetcher.DEFAULT_DB_PATH,
+        help='The location of the Sqlite DB used to track which notifications you have already received.'
+    )
 
-    parser.add_argument('-do','--include-depends-on',
-    help='When a package update is listed, show what packages on your system depend on that package',
-    action="store_true")
+    parser.add_argument(
+        '-do',
+        '--include-depends-on',
+        help='When a package update is listed, show what packages on your system depend on that package',
+        action="store_true")
+
+    parser.add_argument(
+        '--syslog',
+        help="Also send information about packages to update to syslog",
+        action="store_true")
+
+    parser.add_argument(
+        '--facility',
+        help="Which syslog facility to use",
+        default="cron",
+        type="str")
+
+    parser.add_argument(
+        '--ident',
+        help="string to prepend to every syslog message",
+        default="package-cron",
+        type="str")
 
     return parser.parse_args()
 
+
 if __name__ == '__main__':
     sys.exit(main())
+

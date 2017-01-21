@@ -1,6 +1,10 @@
+# coding: utf8
+
+
 import re
 
-class OsVersionFetcher:
+
+class OsVersionFetcher(object):
     def get_complete_version(self):
         version_file = open('/etc/centos-release')
         try:

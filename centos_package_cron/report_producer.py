@@ -1,3 +1,8 @@
+# coding: utf8
+
+import syslog
+import json
+
 from annoyance_fetcher import AnnoyanceFetcher
 from db_session_fetcher import db_session_fetcher
 from package_fetcher import *
@@ -6,7 +11,8 @@ from errata_fetcher import *
 from os_version_fetcher import *
 from mockable_execute import *
 
-class ReportProducer:
+
+class ReportProducer(object):
     def __init__(self,
                  repos_to_exclude_list,
                  repos_to_include_list,
@@ -16,7 +22,9 @@ class ReportProducer:
                  checker=None,
                  annoyance_fetcher=None,
                  db_session_fetch=None,
-                 include_depends_on=None):
+                 include_depends_on=None,
+                 send_syslog=False,
+        
         self.executor = MockableExecute()
         self.pkg_fetcher = pkg_fetcher or PackageFetcher(ChangeLogParser(), self.executor, repos_to_exclude_list, repos_to_include_list)
         self.checker = checker or PackageChecker(ErrataFetcher(), self.pkg_fetcher, OsVersionFetcher())
@@ -25,6 +33,7 @@ class ReportProducer:
         self.annoyance_check = None
         self.skip_old_notices = skip_old_notices
         self.include_depends_on = include_depends_on
+        self.send_syslog = send_syslog
         
     def _get_sorted_relevant_advisories(self):
         security_advisories = filter(lambda adv:adv['advisory'].type == ErrataType.SecurityAdvisory,self.checker.findAdvisoriesOnInstalledPackages())
@@ -36,7 +45,32 @@ class ReportProducer:
         security_advisories = sorted(security_advisories, key=lambda adv: adv['advisory'].severity)
         
         return security_advisories
-        
+
+    def _send_advisories_to_syslog(self, security_advisories):
+        for advisory_and_package in security_advisories:
+            advisory = advisory_and_package['advisory']
+            severity_label = ErrataSeverity.get_label(advisory.severity)
+            packages = advisory_and_package['installed_packages']
+            packages = [("%s|%s|%s" % (pkg.name, pkg.version, pkg.release), pkg) for pkg in packages]
+            packages = dict(packages).values()
+
+            syslog.syslog(json.dumps({
+                'advisory': {
+                    'id': advisory.id,
+                    'severity': severity_label,
+                    'packages': [
+                        {
+                            'name': package.name,
+                            'version': package.version,
+                            'release': package.release
+                        }
+                        for package in packages
+                    ]
+                }
+            }))
+            
+
+
     def _add_advisories_to_email(self, security_advisories, email_body):
         if len(security_advisories) > 0:
             email_body += u'The following security advisories exist for installed packages:\n\n'
@@ -64,7 +98,18 @@ class ReportProducer:
                 self.annoyance_check.remove_old_alerts_for_package(update)    
 
         return sorted(general_updates, key=lambda pkg: pkg.name)
-        
+    
+    def _send_general_updates_to_syslog(self, general_updates):
+        for update in general_updates:
+            syslog.syslog(json.dumps({
+                'general_update': {
+                    'name': update.name,
+                    'version': update.version,
+                    'release': update.release,
+                    'repository': update.repository
+                }
+            }))
+
     def _add_general_updates_to_email(self, general_updates, email_body):
         if len(general_updates) > 0:
             email_body += u"The following packages are available for updating:\n\n"
@@ -113,9 +158,13 @@ class ReportProducer:
             self.annoyance_check = self.annoyance_fetcher.fetch(session)
             advisories = self._get_sorted_relevant_advisories()            
             email_body = self._add_advisories_to_email(advisories, email_body)
+            if self.send_syslog:
+                self._send_advisories_to_syslog(advisories)
             email_body = self._handle_section_boundary(email_body)
             general_updates = self._get_general_updates()
             email_body = self._add_general_updates_to_email(general_updates, email_body)
+            if self.send_syslog:
+                self._send_general_updates_to_syslog(general_updates)
             email_body = self._handle_section_boundary(email_body)
             email_body = self._add_changelogs_to_email(general_updates, email_body)
             

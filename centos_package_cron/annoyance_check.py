@@ -1,8 +1,11 @@
+# coding: utf8
+
+
 from package import Package
 from errata_item import ErrataItem
 from sqlalchemy import or_
 
-class AnnoyanceCheck:
+class AnnoyanceCheck(object):
     def __init__(self, session):
         self.session = session
     
@@ -44,3 +47,5 @@ class AnnoyanceCheck:
             self.session.delete(old_advisory)
             
         self.session.commit()
+
+

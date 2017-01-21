@@ -1,10 +1,14 @@
-import sqlalchemy
+# coding: utf8
+
+import os
 from sqlite3 import dbapi2 as sqlite
+
+import sqlalchemy
 from sqlalchemy.orm import sessionmaker
 from db_base import Base
-import os
 
-class db_session_fetcher:
+
+class db_session_fetcher(object):
     DEFAULT_DB_PATH = '/var/lib/centos-package-cron/already_annoyed.sqlite'
     
     def __init__(self, db_path=DEFAULT_DB_PATH):

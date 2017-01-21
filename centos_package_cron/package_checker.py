@@ -1,8 +1,13 @@
+# coding: utf8
+
+
 import operator
 import re
+
 from rpmUtils.miscutils import compareEVR
 
-class PackageChecker:
+
+class PackageChecker(object):
     def __init__(self, errata_fetcher, package_fetcher, os_fetcher):
         self.errata_fetcher = errata_fetcher
         self.package_fetcher = package_fetcher
@@ -20,14 +25,14 @@ class PackageChecker:
             # Do not want to match el6_5 if we are el6
             regexs.append(r'.*el'+top_level_version+'(?!_).*')        
 
-        matches = map(lambda regex: re.match(regex, advisory_package['release']) != None, regexs)
+        matches = map(lambda regex: re.match(regex, advisory_package.release) != None, regexs)
         return any(matches)
     
     def _compareAdvisoryAgainstInst(self,advisory_package,installed_package):
-        return compareEVR( ('', advisory_package['version'], advisory_package['release']), ('', installed_package.version, installed_package.release))
+        return compareEVR( ('', advisory_package.version, advisory_package.release), ('', installed_package.version, installed_package.release))
     
     def match_advisory_against_installed(self,advisory_package,current_installed):
-        installed_versions = filter(lambda inst: advisory_package['name'] == inst.name, current_installed)
+        installed_versions = filter(lambda inst: advisory_package.name == inst.name, current_installed)
         if not self._advisoryPackageMeantForCurrentOs(advisory_package):
             return []
         # Deal with cases where both old and new kernel packages are installed
